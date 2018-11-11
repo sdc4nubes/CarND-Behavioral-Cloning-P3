@@ -5,6 +5,7 @@ import numpy as np
 import time
 import math
 import matplotlib.pyplot as plt
+from keras import optimizers
 from keras.models import Sequential
 from keras.layers import Flatten, Dense, Lambda, Dropout
 from keras.layers.convolutional import Conv2D
@@ -183,8 +184,9 @@ validation_generator = generator(validation_samples,  left_list, correction_list
 # define the network model
 model = VGG()
 model.summary()
-nEpochs = 20
-model.compile(loss='mse', optimizer='adam')
+nEpochs = 30
+adam = optimizers.Adam(lr=0.0005, beta_1=0.95)
+model.compile(loss='mse', optimizer=adam)
 history = model.fit_generator(train_generator, steps_per_epoch=nSteps, nb_epoch=nEpochs,
             validation_data=validation_generator, validation_steps=len(validation_samples)*p_images/batch_size)
 model.save('model.h5')
