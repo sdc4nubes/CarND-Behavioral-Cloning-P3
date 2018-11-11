@@ -6,6 +6,8 @@ import time
 import math
 import platform
 import matplotlib.pyplot as plt
+if platform.system() != "Windows":
+    plt.switch_backend('agg')
 from keras.models import Sequential
 from keras.layers import Flatten, Dense, Lambda, Dropout
 from keras.layers.convolutional import Conv2D
@@ -26,7 +28,7 @@ def loadData():
                 if not fLine: lines.append(line)
                 fLine = False
         n += 1
-        fName = path() + 'driving_log' + str(n) + '.csv'
+        fName = 'driving_log' + str(n) + '.csv'
     print('loaded ' + str(len(lines)) + ' images')
     return lines
 
@@ -162,8 +164,6 @@ def generator(samples, left_list, correction_list, batch_size=32):
 
 # Main Program
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
-if platform.system() != "Windows":
-    plt.switch_backend('agg')
 batch_size = 512
 valid_perc = .3
 nSteps = 10
