@@ -4,10 +4,7 @@ import os
 import numpy as np
 import time
 import math
-import platform
 import matplotlib.pyplot as plt
-if platform.system() != "Windows":
-    plt.switch_backend('agg')
 from keras.models import Sequential
 from keras.layers import Flatten, Dense, Lambda, Dropout
 from keras.layers.convolutional import Conv2D
@@ -95,13 +92,9 @@ def data_augmentation(images, angles):
         augmented_angles.append(flipped_angle)
     return augmented_images, augmented_angles
 
-def path():
-    path = os.pardir + "/Self Driving Car Beta Simulator Data/"
-    return path
-
 # Get full image path and file name
 def get_fullName(fName):
-    imagePath = path() + "IMG/"
+    imagePath = "IMG/"
     fName = fName.replace("~", "")
     fName = fName[fName.rfind("\\") + 1:]
     fName = fName[fName.rfind("/") + 1:]
@@ -157,7 +150,12 @@ def generator(samples, left_list, correction_list, batch_size=32):
 # Augment images
             augmented_images, augmented_angles = data_augmentation(images, angles)
             X_train = np.array(augmented_images)
+            clahe = cv2.createCLAHE(clipLimit=.8, tileGridSize=(4,4))
+            X_train = np.array(X_train)
             X_train = np.dot(X_train[...,:3], [0.299, 0.587, 0.114])
+            for i in range(X_train.shape[0]):
+                X_train[i] = clahe.apply(np.uint8(X_train[i]))
+                X_train[i] = cv2.equalizeHist(np.uint8(X_train[i]))
             X_train = X_train.reshape(X_train.shape + (1,))
             y_train = np.array(augmented_angles)
             yield shuffle(X_train, y_train)
