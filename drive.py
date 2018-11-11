@@ -3,7 +3,7 @@ import base64
 from datetime import datetime
 import os
 import shutil
-
+import cv2
 import numpy as np
 import socketio
 import eventlet
@@ -11,42 +11,12 @@ import eventlet.wsgi
 from PIL import Image
 from flask import Flask
 from io import BytesIO
-
 from keras.models import load_model
-import h5py
-from keras import __version__ as keras_version
 
 sio = socketio.Server()
 app = Flask(__name__)
 model = None
 prev_image_array = None
-
-
-class SimplePIController:
-    def __init__(self, Kp, Ki):
-        self.Kp = Kp
-        self.Ki = Ki
-        self.set_point = 0.
-        self.error = 0.
-        self.integral = 0.
-
-    def set_desired(self, desired):
-        self.set_point = desired
-
-    def update(self, measurement):
-        # proportional error
-        self.error = self.set_point - measurement
-
-        # integral error
-        self.integral += self.error
-
-        return self.Kp * self.error + self.Ki * self.integral
-
-
-controller = SimplePIController(0.1, 0.002)
-set_speed = 9
-controller.set_desired(set_speed)
-
 
 @sio.on('telemetry')
 def telemetry(sid, data):
@@ -60,14 +30,24 @@ def telemetry(sid, data):
         # The current image from the center camera of the car
         imgString = data["image"]
         image = Image.open(BytesIO(base64.b64decode(imgString)))
+        # Convert to Numpy array
         image_array = np.asarray(image)
+        # Extract the center of the image
+        image_array = image_array[60:130,80:240,:]
+        # Greyscale image
+        image_array = np.dot(image_array[...,:3], [0.299, 0.587, 0.114])
+        # Resize to 32x32 image
+        image_array = cv2.resize(image_array, (32, 32))
+        # Reshape image to 32x32x1 (model input size)
+        image_array = image_array.reshape(32, 32, 1)
+        # Predict Steering Angle from image
         steering_angle = float(model.predict(image_array[None, :, :, :], batch_size=1))
-
-        throttle = controller.update(float(speed))
-
-        print(steering_angle, throttle)
+        steering_angle *= (abs(steering_angle)*.7)
+        # Get throttle value based on speed and steering angle
+        throttle = get_throttle(throttle, steering_angle, speed)
+        # Print and send control to simulator
+        print(round(steering_angle, 2), round(throttle, 2), round(float(speed), 2))
         send_control(steering_angle, throttle)
-
         # save frame
         if args.image_folder != '':
             timestamp = datetime.utcnow().strftime('%Y_%m_%d_%H_%M_%S_%f')[:-3]
@@ -77,12 +57,16 @@ def telemetry(sid, data):
         # NOTE: DON'T EDIT THIS.
         sio.emit('manual', data={}, skip_sid=True)
 
+def get_throttle(throttle, steer, speed):
+    speed = float(speed)
+    throttle = float(throttle)
+    if speed <=10: return 1
+    return max(1 - abs(steer) * 30, .1)
 
 @sio.on('connect')
 def connect(sid, environ):
     print("connect ", sid)
     send_control(0, 0)
-
 
 def send_control(steering_angle, throttle):
     sio.emit(
@@ -93,32 +77,24 @@ def send_control(steering_angle, throttle):
         },
         skip_sid=True)
 
-
 if __name__ == '__main__':
+    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
     parser = argparse.ArgumentParser(description='Remote Driving')
     parser.add_argument(
         'model',
         type=str,
+        nargs='?',
+        default='model.h5',
         help='Path to model h5 file. Model should be on the same path.'
     )
     parser.add_argument(
         'image_folder',
         type=str,
         nargs='?',
-        default='',
+        default='run1',
         help='Path to image folder. This is where the images from the run will be saved.'
     )
     args = parser.parse_args()
-
-    # check that model Keras version is same as local Keras version
-    f = h5py.File(args.model, mode='r')
-    model_version = f.attrs.get('keras_version')
-    keras_version = str(keras_version).encode('utf8')
-
-    if model_version != keras_version:
-        print('You are using Keras version ', keras_version,
-              ', but the model was built using ', model_version)
-
     model = load_model(args.model)
 
     if args.image_folder != '':
@@ -131,9 +107,7 @@ if __name__ == '__main__':
         print("RECORDING THIS RUN ...")
     else:
         print("NOT RECORDING THIS RUN ...")
-
     # wrap Flask application with engineio's middleware
     app = socketio.Middleware(sio, app)
-
     # deploy as an eventlet WSGI server
     eventlet.wsgi.server(eventlet.listen(('', 4567)), app)
