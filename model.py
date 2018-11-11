@@ -4,6 +4,7 @@ import os
 import numpy as np
 import time
 import math
+import platform
 import matplotlib.pyplot as plt
 from keras.models import Sequential
 from keras.layers import Flatten, Dense, Lambda, Dropout
@@ -16,7 +17,7 @@ def loadData():
     print('loading the data...')
     lines = []
     n = 0
-    fName = path() + 'driving_log.csv'
+    fName = 'driving_log.csv'
     while os.path.isfile(fName):
         with open(fName) as f:
             content = csv.reader(f)
@@ -161,6 +162,8 @@ def generator(samples, left_list, correction_list, batch_size=32):
 
 # Main Program
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+if platform.system() != "Windows":
+    plt.switch_backend('agg')
 batch_size = 512
 valid_perc = .3
 nSteps = 10
