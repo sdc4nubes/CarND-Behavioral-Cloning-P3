@@ -87,7 +87,7 @@ def data_augmentation(images, angles):
     for image, angle in zip(images, angles):
 # adjust image attributes to fit model
         image = image[60:130,:,:]
-        image = cv2.resize(image, (50, 120), interpolation = cv2.INTER_AREA)
+        image = cv2.resize(image, (32, 32), interpolation = cv2.INTER_AREA)
         augmented_images.append(image)
         augmented_angles.append(angle)
 # flip
@@ -115,20 +115,21 @@ def get_fullName(fName):
 
 def VGG():
     model = Sequential()
-    model.add(Lambda(lambda x: (x - 128) / 128, input_shape=(120, 50, 1)))
-    model.add(Conv2D(8, 5, 5, activation='relu'))
+    model.add(Lambda(lambda x: (x - 128) / 128, input_shape=(32, 32, 1)))
+    model.add(Conv2D(32, 3, 3, activation='relu'))
+    model.add(Conv2D(32, 3, 3, activation='relu'))
     model.add(MaxPooling2D())
-    model.add(Conv2D(12, 5, 5, activation='relu'))
+    model.add(Conv2D(64, 3, 3, activation='relu'))
+    model.add(Conv2D(64, 3, 3, activation='relu'))
     model.add(MaxPooling2D())
-    model.add(Conv2D(16, 3, 3, activation='relu'))
+    model.add(Conv2D(128, 3, 3, activation='relu'))
     model.add(MaxPooling2D())
-    model.add(Conv2D(20, 3, 3, activation='relu'))
     model.add(Flatten())
-    model.add(Dense(100, activation='relu'))
+    model.add(Dense(128, activation='relu'))
     model.add(Dropout(0.5))
-    model.add(Dense(50, activation='relu'))
+    model.add(Dense(64, activation='relu'))
     model.add(Dropout(0.5))
-    model.add(Dense(10, activation='relu'))
+    model.add(Dense(32, activation='elu'))
     model.add(Dropout(.5))
     model.add(Dense(1))
     return model
@@ -187,7 +188,7 @@ validation_generator = generator(validation_samples,  left_list, correction_list
 # define the network model
 model = VGG()
 model.summary()
-nEpochs = 20
+nEpochs =30
 adam = optimizers.Adam(lr=0.0005, beta_1=0.95)
 model.compile(loss='mse', optimizer=adam)
 history = model.fit_generator(train_generator, steps_per_epoch=nSteps, nb_epoch=nEpochs,
