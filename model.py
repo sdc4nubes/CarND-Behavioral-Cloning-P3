@@ -4,6 +4,10 @@ import os
 import numpy as np
 import time
 import math
+import platform
+if platform.system() == "Linux":
+    import matplotlib
+    matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from keras import optimizers
 from keras.models import Sequential
