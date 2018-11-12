@@ -123,7 +123,6 @@ def VGG():
     model.add(Conv2D(16, 3, 3, activation='relu'))
     model.add(MaxPooling2D())
     model.add(Conv2D(20, 3, 3, activation='relu'))
-    model.add(MaxPooling2D())
     model.add(Flatten())
     model.add(Dense(100, activation='relu'))
     model.add(Dropout(0.5))
