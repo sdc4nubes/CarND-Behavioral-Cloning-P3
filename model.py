@@ -83,7 +83,7 @@ def data_augmentation(images, angles):
     for image, angle in zip(images, angles):
 # adjust image attributes to fit model
         image = image[60:130,:,:]
-        image = cv2.resize(image, (70, 160), interpolation = cv2.INTER_AREA)
+        image = cv2.resize(image, (70, 120), interpolation = cv2.INTER_AREA)
         augmented_images.append(image)
         augmented_angles.append(angle)
 # flip
@@ -111,7 +111,7 @@ def get_fullName(fName):
 
 def VGG():
     model = Sequential()
-    model.add(Lambda(lambda x: (x - 128) / 128, input_shape=(160, 70, 1)))
+    model.add(Lambda(lambda x: (x - 128) / 128, input_shape=(120, 70, 1)))
     model.add(Conv2D(8, 5, 5, activation='relu'))
     model.add(MaxPooling2D())
     model.add(Conv2D(12, 5, 5, activation='relu'))
