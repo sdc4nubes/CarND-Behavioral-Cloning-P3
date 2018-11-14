@@ -163,7 +163,6 @@ def generator(samples, left_list, correction_list, batch_size=32):
                 X_train[i] = cv2.equalizeHist(np.uint8(X_train[i]))
             X_train = X_train.reshape(X_train.shape + (1,))
             y_train = np.array(augmented_angles)
-            print("offset", offset)
             yield shuffle(X_train, y_train)
 
 # Main Program
