@@ -36,17 +36,23 @@ def telemetry(sid, data):
         image_array = image_array[60:130,80:240,:]
         # Greyscale image
         image_array = np.dot(image_array[...,:3], [0.299, 0.587, 0.114])
+        # Apply CLAHE
+        clahe = cv2.createCLAHE(clipLimit=.8, tileGridSize=(4,4))
+        image_array = clahe.apply(np.uint8(image_array))
+        # Apply histogram equalization
+        image_array = cv2.equalizeHist(np.uint8(image_array))
         # Resize to 32x32 image
         image_array = cv2.resize(image_array, (32, 32))
         # Reshape image to 32x32x1 (model input size)
         image_array = image_array.reshape(32, 32, 1)
         # Predict Steering Angle from image
         steering_angle = float(model.predict(image_array[None, :, :, :], batch_size=1))
-        steering_angle *= (abs(steering_angle)*.7)
+        steering_angle *= (abs(steering_angle) ** 1)
         # Get throttle value based on speed and steering angle
         throttle = get_throttle(throttle, steering_angle, speed)
         # Print and send control to simulator
-        print(round(steering_angle, 2), round(throttle, 2), round(float(speed), 2))
+        print(str(round(steering_angle, 2)).rjust(5), str(round(throttle, 2)).rjust(4),
+            str(round(float(speed), 2)).rjust(5))
         send_control(steering_angle, throttle)
         # save frame
         if args.image_folder != '':
@@ -61,7 +67,7 @@ def get_throttle(throttle, steer, speed):
     speed = float(speed)
     throttle = float(throttle)
     if speed <=10: return 1
-    return max(1 - abs(steer) * 30, .1)
+    return max(1 - ((steer * 50) ** 2), .1)
 
 @sio.on('connect')
 def connect(sid, environ):

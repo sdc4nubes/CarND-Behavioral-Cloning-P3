@@ -34,12 +34,12 @@ def loadData():
     print('loaded ' + str(len(lines)) + ' images')
     return lines
 
-def balance_data(samples, samples_needed, visualization_flag ,bins=201):
+def balance_data(samples, samples_needed, visualization_flag, bins=201):
     K=bins
     del_needed = len(samples) - samples_needed
     angles = []
     for line in samples:
-        angles.append(round(float(line[3]),2))
+        angles.append(round(float(line[3]), 2))
     plt.figure("Original and Modified Histograms of Image Counts")
     n, bins, patches = plt.hist(angles, bins=bins, color='#17C5E4', linewidth=0.1)
     angles = np.array(angles)
@@ -64,14 +64,14 @@ def balance_data(samples, samples_needed, visualization_flag ,bins=201):
     # angles = np.delete(angles,del_ind)
     balanced_samples = [v for i, v in enumerate(samples) if i not in del_ind]
     balanced_angles = np.delete(angles,del_ind)
-    plt.subplot(1,2,2)
+    plt.subplot(1, 2, 2)
     plt.hist(balanced_angles, bins=bins, color='#17C5E4', linewidth=0.1)
     plt.title('Modified Histogram', fontsize=10)
     plt.xlabel('Steering Angle', fontsize=10)
     plt.ylabel('Image Count', fontsize=10)
     if visualization_flag:
         plt.figure
-        plt.subplot(1,2,1)
+        plt.subplot(1, 2, 1)
         n, bins, patches = plt.hist(angles, bins=bins, color='#C70039', linewidth=0.1)
         plt.title('Original Histogram', fontsize=10)
         plt.xlabel('Steering Angle', fontsize=10)
@@ -151,18 +151,19 @@ def generator(samples, left_list, correction_list, batch_size=32):
                     left = left_list[i]
                     right = left + 160
                     images.append(image[:,left:right,:])
-                    angles.append(angle + correction)
-# Augment images
+                    angles.append(round(angle + correction, 2))
+
             augmented_images, augmented_angles = data_augmentation(images, angles)
             X_train = np.array(augmented_images)
-            clahe = cv2.createCLAHE(clipLimit=.8, tileGridSize=(4,4))
             X_train = np.array(X_train)
             X_train = np.dot(X_train[...,:3], [0.299, 0.587, 0.114])
+            clahe = cv2.createCLAHE(clipLimit=.8, tileGridSize=(4,4))
             for i in range(X_train.shape[0]):
                 X_train[i] = clahe.apply(np.uint8(X_train[i]))
                 X_train[i] = cv2.equalizeHist(np.uint8(X_train[i]))
             X_train = X_train.reshape(X_train.shape + (1,))
             y_train = np.array(augmented_angles)
+            print("offset", offset)
             yield shuffle(X_train, y_train)
 
 # Main Program
@@ -188,7 +189,7 @@ validation_generator = generator(validation_samples,  left_list, correction_list
 # define the network model
 model = VGG()
 model.summary()
-nEpochs =30
+nEpochs = 30
 adam = optimizers.Adam(lr=0.0005, beta_1=0.95)
 model.compile(loss='mse', optimizer=adam)
 history = model.fit_generator(train_generator, steps_per_epoch=nSteps, nb_epoch=nEpochs,
