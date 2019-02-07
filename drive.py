@@ -2,6 +2,7 @@ import argparse
 import base64
 from datetime import datetime
 import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import shutil
 import cv2
 import numpy as np
@@ -47,12 +48,11 @@ def telemetry(sid, data):
         image_array = image_array.reshape(32, 32, 1)
         # Predict Steering Angle from image
         steering_angle = float(model.predict(image_array[None, :, :, :], batch_size=1))
-        steering_angle *= (abs(steering_angle) ** 1)
+        steering_angle *= abs(steering_angle)
+        steering_angle = round(steering_angle, 2)
         # Get throttle value based on speed and steering angle
         throttle = get_throttle(throttle, steering_angle, speed)
-        # Print and send control to simulator
-        print(str(round(steering_angle, 2)).rjust(5), str(round(throttle, 2)).rjust(4),
-            str(round(float(speed), 2)).rjust(5))
+        print("%5.2f" % steering_angle, "%4.2f" % throttle, "%5.2f" % float(speed))
         send_control(steering_angle, throttle)
         # save frame
         if args.image_folder != '':
@@ -73,7 +73,7 @@ def get_throttle(throttle, steer, speed):
 def connect(sid, environ):
     print("connect ", sid)
     send_control(0, 0)
-
+    
 def send_control(steering_angle, throttle):
     sio.emit(
         "steer",
@@ -84,7 +84,6 @@ def send_control(steering_angle, throttle):
         skip_sid=True)
 
 if __name__ == '__main__':
-    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
     parser = argparse.ArgumentParser(description='Remote Driving')
     parser.add_argument(
         'model',

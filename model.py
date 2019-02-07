@@ -1,13 +1,11 @@
 import csv
 import cv2
 import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import numpy as np
 import time
 import math
 import platform
-if platform.system() == "Linux":
-    import matplotlib
-    matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from keras import optimizers
 from keras.models import Sequential
@@ -166,7 +164,6 @@ def generator(samples, left_list, correction_list, batch_size=32):
             yield shuffle(X_train, y_train)
 
 # Main Program
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 batch_size = 512
 valid_perc = .3
 nSteps = 10
